@@ -1,0 +1,54 @@
+//@version=5
+indicator("Short-Term Scanner (Enhanced with 0.5% or More)", overlay=true)
+
+// EMA Settings
+ema9 = ta.ema(close, 9)
+ema21 = ta.ema(close, 21)
+
+// Volume Condition (Relative Volume)
+vol_condition = volume > ta.sma(volume, 20)
+
+// Momentum Candle Condition
+body_size = math.abs(close - open)
+body_ratio = body_size / (high - low)
+momentum_long = body_size > (ta.atr(14) * 1.2) and body_ratio > 0.6
+momentum_short = body_size > (ta.atr(14) * 1.2) and body_ratio > 0.6
+
+// Trend Conditions
+trend_up = ema9 > ema21
+trend_down = ema9 < ema21
+
+// 0.5% Target Calculation
+target_up = close * 1.005  // 0.5% Target for Long
+target_down = close * 0.995 // 0.5% Target for Short
+
+// Lookahead Function to Check Target (10 Bars)
+lookahead_bars = 10  // Number of bars to look ahead
+reaches_target_up = ta.highest(high, lookahead_bars) >= target_up
+reaches_target_down = ta.lowest(low, lookahead_bars) <= target_down
+
+// Check for Movement > 0.5%
+exceeds_target_up = ta.highest(high, lookahead_bars) >= target_up and (ta.highest(high, lookahead_bars) - close) / close >= 0.005
+exceeds_target_down = ta.lowest(low, lookahead_bars) <= target_down and (close - ta.lowest(low, lookahead_bars)) / close >= 0.005
+
+// Final Signals for Potential 0.5% or More Movement
+potential_up_signal = vol_condition and trend_up and exceeds_target_up
+potential_down_signal = vol_condition and trend_down and exceeds_target_down
+
+// Long and Short Signals
+long_signal = close > ema9 and close > ema21 and vol_condition and momentum_long and trend_up and exceeds_target_up
+short_signal = close < ema9 and close < ema21 and vol_condition and momentum_short and trend_down and exceeds_target_down
+
+// Plot Buy Signals
+plotshape(series=long_signal, location=location.belowbar, color=color.new(color.green, 0), style=shape.circle, size=size.tiny, title="Buy Signal")
+
+// Plot Sell Signals
+plotshape(series=short_signal, location=location.abovebar, color=color.new(color.red, 0), style=shape.circle, size=size.tiny, title="Sell Signal")
+
+// Plot Potential 0.5% or More Movement Signals
+plotshape(series=potential_up_signal, location=location.belowbar, color=color.new(color.blue, 0), style=shape.triangleup, size=size.small, title="0.5% or More Up Signal")
+plotshape(series=potential_down_signal, location=location.abovebar, color=color.new(color.blue, 0), style=shape.triangledown, size=size.small, title="0.5% or More Down Signal")
+
+// Plot EMAs
+plot(ema9, color=color.blue, title="EMA 9")
+plot(ema21, color=color.red, title="EMA 21")
